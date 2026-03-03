@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: de3-postgres
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: bankingdb
+      POSTGRES_USER: postgres
+    ports:
+      - "5433:5432"
+
+  spark-master:
+    image: spark:3.5.7-java17-python3
+    container_name: de3-spark-master
+    ports:
+      - "8080:8080"   # Spark Master UI
+      - "7077:7077"   # Spark Master port
+    command: >
+      /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+      --host spark-master
+      --port 7077
+      --webui-port 8080
+
+  spark-worker:
+    image: spark:3.5.7-java17-python3
+    container_name: de3-spark-worker
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081"   # Spark Worker UI
+    command: >
+      /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
+      spark://spark-master:7077
+      --webui-port 8081
