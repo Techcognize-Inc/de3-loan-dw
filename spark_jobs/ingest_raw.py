@@ -1,51 +1,47 @@
 from pyspark.sql import SparkSession
-import os
+from pyspark.sql.functions import col
 
-# Spark Session
-spark = SparkSession.builder \
-    .appName("LoanDW-Raw-Ingestion") \
-    .config("spark.jars", "jars/postgresql-42.7.3.jar") \
-    .getOrCreate()
+from common.jdbc import jdbc_url, jdbc_properties
 
-# Base folder
-base_path = "/Users/revanth/Downloads/home-credit-default-risk/"
+TABLE_MAP = {
+    "application_train.csv": "application_train",
+    "bureau.csv": "bureau",
+    "bureau_balance.csv": "bureau_balance",
+    "previous_application.csv": "previous_application",
+    "POS_CASH_balance.csv": "pos_cash_balance",
+    "installments_payments.csv": "installments_payments",
+    "credit_card_balance.csv": "credit_card_balance",
+}
 
-# List of files
-files = [
-    "application_train.csv",
-    "bureau.csv",
-    "bureau_balance.csv",
-    "previous_application.csv",
-    "POS_CASH_balance.csv",
-    "credit_card_balance.csv",
-    "installments_payments.csv"
-]
+RAW_PATH = "/opt/spark/work-dir/data/raw"
 
-# Loop through files
-for file in files:
-    
-    table_name = file.replace(".csv", "").lower()
-    full_path = os.path.join(base_path, file)
+def main():
+    spark = SparkSession.builder.appName("de3-ingest-raw").getOrCreate()
 
-    print(f"Ingesting {file} into raw.{table_name}")
+    for file_name, table_name in TABLE_MAP.items():
+        path = f"{RAW_PATH}/{file_name}"
+        print(f"\n=== Reading: {path}")
 
-    df = spark.read \
-        .option("header", "true") \
-        .option("inferSchema", "true") \
-        .csv(full_path)
+        df = (
+            spark.read
+            .option("header", "true")
+            .option("inferSchema", "true")   # OK for Day 2; we’ll harden later
+            .csv(path)
+        )
 
-    print(f"Row count for {file}: {df.count()}")
+        df = df.select([col(c).alias(c.strip()) for c in df.columns])
 
-    df.write \
-        .format("jdbc") \
-        .option("url", "jdbc:postgresql://localhost:5432/loan_dw") \
-        .option("dbtable", f"raw.{table_name}") \
-        .option("user", "loan_user") \
-        .option("password", "loan_pass") \
-        .option("driver", "org.postgresql.Driver") \
-        .mode("overwrite") \
-        .save()
+        full_table = f"raw.{table_name}"
+        print(f"Writing to {full_table} | rows={df.count()} | cols={len(df.columns)}")
 
-    print(f"Finished loading raw.{table_name}\n")
+        (
+            df.write
+            .mode("overwrite")
+            .jdbc(url=jdbc_url(), table=full_table, properties=jdbc_properties())
+        )
 
-print("All files successfully ingested into raw schema.")
+    spark.stop()
+    print("\n✅ Raw ingestion complete.")
+
+if __name__ == "__main__":
+    main()
