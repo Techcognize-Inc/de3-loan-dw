@@ -1,0 +1,11 @@
+name: 'de3_loan_dw'
+version: '1.0.0'
+config-version: 2
+
+profile: 'de3_loan_dw'
+
+model-paths: ["models"]
+
+models:
+  de3_loan_dw:
+    +materialized: view

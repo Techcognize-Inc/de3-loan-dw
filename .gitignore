@@ -1,20 +1,53 @@
-# Data
+# =========================
+# Data Files
+# =========================
 data/raw/
 data/*.zip
 
-# Python
+# =========================
+# Python Cache & Virtual Env
+# =========================
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
 .venv/
 venv/
+env/
+dbt_venv_*/
 
-# dbt
+# =========================
+# dbt Generated Files (Very Important ⭐)
+# =========================
 target/
 dbt_packages/
 logs/
+manifest.json
+catalog.json
+run_results.json
 
-# OS
-.DS_Store
-
-# Env
+# =========================
+# Credentials & Secrets
+# =========================
 .env
+profiles.yml
+.dbt/
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Spark / Big Data Outputs
+# =========================
+spark-warehouse/
+*_SUCCESS
+
+# =========================
+# IDE Files
+# =========================
+.idea/
+.vscode/
